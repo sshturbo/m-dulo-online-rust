@@ -71,7 +71,7 @@ print_big_message
 echo -e "\e[1;36mAntes de iniciar a instalação, precisamos de algumas informações.\e[0m"
 echo -e "\e[1;33mPor favor, informe o domínio onde a API será acessada.\e[0m"
 echo ""
-read -p "Digite o domínio da API (exemplo: api.seusite.com): " API_DOMAIN
+read -p "Digite o domínio da API (exemplo: api.seusite.com): " API_DOMAIN </dev/tty
 API_URL="https://${API_DOMAIN}/online.php"
 
 # ===============================
