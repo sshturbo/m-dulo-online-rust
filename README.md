@@ -29,15 +29,15 @@ sudo wget -qO- https://raw.githubusercontent.com/sshturbo/m-dulo-online-rust/ref
 
 ## Verificar se está instalado e executado com sucesso só executar o comando.
 ```bash
-sudo systemctl status m-dulo.service
+sudo systemctl status modulo-online-rust.service
 ```
 
 ## Para poder tá parando os módulos e só executar o comando.
 ```bash
-sudo systemctl stop m-dulo.service
+sudo systemctl stop modulo-online-rust.service
 ```
 ```bash
-sudo systemctl disable m-dulo.service
+sudo systemctl disable modulo-online-rust.service
 ```
 ```bash
 sudo systemctl daemon-reload
@@ -45,10 +45,10 @@ sudo systemctl daemon-reload
 
 ## Para poder ta iniciando os módulos e so executar o comando.
 ```bash
-sudo systemctl enable m-dulo.service
+sudo systemctl enable modulo-online-rust.service
 ```
 ```bash
-sudo systemctl start m-dulo.service
+sudo systemctl start modulo-online-rust.service
 ```
 
 ## Instalação
