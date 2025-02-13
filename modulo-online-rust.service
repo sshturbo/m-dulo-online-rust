@@ -8,12 +8,12 @@ StartLimitBurst=5
 Type=simple
 User=root
 Group=root
-ExecStart=/opt/m-dulo-online-rust/modulo-online-rust
-WorkingDirectory=/opt/m-dulo-online-rust
+ExecStart=/opt/modulo-online-rust/modulo-online-rust
+WorkingDirectory=/opt/modulo-online-rust
 Restart=always
 RestartSec=5
-StandardOutput=file:/opt/m-dulo-online-rust/modulo-online-rust.out.log
-StandardError=file:/opt/m-dulo-online-rust/modulo-online-rust.err.log
+StandardOutput=file:/opt/modulo-online-rust/modulo-online-rust.out.log
+StandardError=file:/opt/modulo-online-rust/modulo-online-rust.err.log
 
 # Limites de recursos (opcional)
 MemoryMax=512M
