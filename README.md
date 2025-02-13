@@ -27,6 +27,30 @@ REQUEST_TIMEOUT=5 # Timeout das requisições em segundos
 sudo wget -qO- https://raw.githubusercontent.com/sshturbo/m-dulo-online-rust/refs/heads/master/install.sh | sudo bash
 ```
 
+## Verificar se está instalado e executado com sucesso só executar o comando.
+```bash
+sudo systemctl status m-dulo.service
+```
+
+## Para poder tá parando os módulos e só executar o comando.
+```bash
+sudo systemctl stop m-dulo.service
+```
+```bash
+sudo systemctl disable m-dulo.service
+```
+```bash
+sudo systemctl daemon-reload
+```
+
+## Para poder ta iniciando os módulos e so executar o comando.
+```bash
+sudo systemctl enable m-dulo.service
+```
+```bash
+sudo systemctl start m-dulo.service
+```
+
 ## Instalação
 
 Requisitos:
