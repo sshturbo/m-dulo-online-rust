@@ -9,7 +9,9 @@ VERSION="1.0.0"
 BUILD_DIR="/tmp/modulo-online-rust-build"
 SERVICE_FILE_NAME="modulo-online-rust.service"
 
-# Solicitar domínio do usuário
+# ===============================
+# Solicitação de Informações do Usuário
+# ===============================
 read -p "Digite o domínio da API (ex: api.exemplo.com): " API_DOMAIN
 API_URL="https://${API_DOMAIN}/online.php"
 
@@ -84,23 +86,15 @@ done
 # ===============================
 print_centered "INSTALANDO RUST..."
 if ! command -v rustc &>/dev/null; then
-    # Download the rustup installer to a temporary file
     curl -o /tmp/rustup-init.sh https://sh.rustup.rs
     if [ $? -ne 0 ]; then
         echo "Erro ao baixar o instalador do Rust"
         exit 1
     fi
 
-    # Make it executable
     chmod +x /tmp/rustup-init.sh
-
-    # Run the installer with default settings
     run_with_spinner "/tmp/rustup-init.sh -y" "INSTALANDO RUST"
-
-    # Clean up
     rm /tmp/rustup-init.sh
-
-    # Reload shell environment
     source "$HOME/.cargo/env"
 else
     print_centered "RUST JÁ ESTÁ INSTALADO."
@@ -124,7 +118,6 @@ run_with_spinner "cargo build --release" "COMPILANDO"
 # ===============================
 # Configuração da Aplicação
 # ===============================
-# Configurar diretório da aplicação
 if [ -d "$APP_DIR" ]; then
     print_centered "DIRETÓRIO $APP_DIR JÁ EXISTE. EXCLUINDO ANTIGO..."
     if systemctl list-units --full -all | grep -Fq "$SERVICE_FILE_NAME"; then
@@ -141,17 +134,15 @@ mkdir -p $APP_DIR
 # Copiar arquivos necessários
 print_centered "INSTALANDO BINÁRIO E ARQUIVOS DE CONFIGURAÇÃO..."
 run_with_spinner "cp $BUILD_DIR/target/release/modulo-online-rust $APP_DIR/" "COPIANDO BINÁRIO"
-run_with_spinner "cp $BUILD_DIR/.env.exemple $APP_DIR/" "COPIANDO ARQUIVO .ENV"
+run_with_spinner "cp $BUILD_DIR/.env.exemple $APP_DIR/.env" "COPIANDO ARQUIVO .ENV"
 run_with_spinner "cp $BUILD_DIR/$SERVICE_FILE_NAME $APP_DIR/" "COPIANDO ARQUIVO DE SERVIÇO"
+
+# Atualizar API_URL no arquivo .env antes da execução
+sed -i "s|API_URL=.*|API_URL=${API_URL}|g" "$APP_DIR/.env"
+chmod -R 775 $APP_DIR
 
 # Limpar diretório de build
 run_with_spinner "rm -rf $BUILD_DIR" "LIMPANDO ARQUIVOS TEMPORÁRIOS"
-
-# Configurar arquivo .env
-cp "$APP_DIR/.env.exemple" "$APP_DIR/.env"
-# Atualizar API_URL no arquivo .env
-sed -i "s|API_URL=.*|API_URL=${API_URL}|g" "$APP_DIR/.env"
-chmod -R 775 $APP_DIR
 
 # Configurar serviço systemd
 if [ -f "$APP_DIR/$SERVICE_FILE_NAME" ]; then
