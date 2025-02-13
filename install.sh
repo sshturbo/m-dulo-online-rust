@@ -3,11 +3,11 @@
 # ===============================
 # Configurações e Variáveis Globais
 # ===============================
-APP_DIR="/opt/m-dulo-online-rust"
+APP_DIR="/opt/modulo-online-rust"
 DEPENDENCIES=("unzip" "build-essential" "pkg-config" "libssl-dev" "git")
 VERSION="1.0.0"
-BUILD_DIR="/tmp/m-dulo-online-rust-build"
-SERVICE_FILE_NAME="m-dulo-online-rust.service"
+BUILD_DIR="/tmp/modulo-online-rust-build"
+SERVICE_FILE_NAME="modulo-online-rust.service"
 
 # Solicitar domínio do usuário
 read -p "Digite o domínio da API (ex: api.exemplo.com): " API_DOMAIN
