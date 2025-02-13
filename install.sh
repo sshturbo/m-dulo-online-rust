@@ -11,7 +11,7 @@ SERVICE_FILE_NAME="m-dulo-online-rust.service"
 
 # Solicitar domínio do usuário
 read -p "Digite o domínio da API (ex: api.exemplo.com): " API_DOMAIN
-API_URL="http://${API_DOMAIN}/online.php"
+API_URL="https://${API_DOMAIN}/online.php"
 
 # ===============================
 # Funções Utilitárias
