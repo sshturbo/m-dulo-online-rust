@@ -6,7 +6,7 @@ use std::{
     fs::{self, File},
     io::{self, BufRead},
 };
-use log::{error, info};
+use log::{error, info, debug};
 use thiserror::Error;
 use backoff::{ExponentialBackoff, Error as BackoffError};
 
@@ -32,22 +32,18 @@ impl Config {
     fn from_env() -> Result<Self, AppError> {
         dotenv::dotenv().ok();
         
-        let url = match env::var("API_URL") {
-            Ok(url) => url,
-            Err(_) => env::args()
-                .nth(1)
-                .ok_or_else(|| AppError::ConfigError("URL não especificada".to_string()))?
-        };
+        let url = env::var("API_URL")
+            .map_err(|_| AppError::ConfigError("API_URL não especificada no .env".to_string()))?;
             
         let interval = env::var("CHECK_INTERVAL")
-            .unwrap_or_else(|_| "3".to_string())
+            .unwrap_or_else(|_| "10".to_string()) // Aumentar o intervalo para reduzir a carga
             .parse()
-            .unwrap_or(3);
+            .map_err(|_| AppError::ConfigError("CHECK_INTERVAL inválido".to_string()))?;
             
         let timeout = env::var("REQUEST_TIMEOUT")
             .unwrap_or_else(|_| "5".to_string())
             .parse()
-            .unwrap_or(5);
+            .map_err(|_| AppError::ConfigError("REQUEST_TIMEOUT inválido".to_string()))?;
             
         Ok(Config {
             url,
@@ -91,18 +87,15 @@ fn start_loop(config: &Config) {
 fn get_users() -> Result<String, AppError> {
     let mut user_list = Vec::new();
 
-    // Obtém usuários do sistema
+    // Executa o comando para obter os processos relacionados a "priv" em estado "Ss"
     let output = Command::new("sh")
         .arg("-c")
-        .arg("ps aux | grep priv | grep Ss")
+        .arg("ps aux | grep priv | grep Ss | awk -F 'sshd: ' '{print $2}' | awk -F ' ' '{print $1}'")
         .output()?;
 
     let output_str = String::from_utf8_lossy(&output.stdout);
     for line in output_str.lines() {
-        let columns: Vec<&str> = line.split_whitespace().collect();
-        if let Some(user) = extract_user_from_columns(&columns) {
-            user_list.push(user);
-        }
+        user_list.push(line.to_string());
     }
 
     // Verifica usuários OpenVPN
@@ -111,17 +104,6 @@ fn get_users() -> Result<String, AppError> {
     }
 
     Ok(user_list.join(","))
-}
-
-fn extract_user_from_columns(columns: &[&str]) -> Option<String> {
-    if columns.len() >= 12 {
-        columns.iter()
-            .position(|&x| x == "sshd:")
-            .and_then(|index| columns.get(index + 1))
-            .map(|&user| user.to_string())
-    } else {
-        None
-    }
 }
 
 fn get_openvpn_users() -> Result<Vec<String>, AppError> {
@@ -154,7 +136,7 @@ fn send_post_request(url: &str, user_list: &str, timeout: u64) -> Result<(), App
         .build()?;
     
     let form_data = format!("users={}", urlencoding::encode(user_list));
-    info!("Tentando enviar dados para {}: {}", url, form_data);
+    debug!("Tentando enviar dados para {}: [DADOS SENSÍVEIS]", url);
     
     backoff::retry(backoff, || {
         info!("Fazendo requisição POST para {}", url);
@@ -172,9 +154,9 @@ fn send_post_request(url: &str, user_list: &str, timeout: u64) -> Result<(), App
         
         if !status.is_success() {
             let error_text = response.text().unwrap_or_default();
-            error!("Erro na resposta: Status={}, Body={}", status, error_text);
+            error!("Erro na resposta: Status={}, Body=[DADOS SENSÍVEIS]", status);
             return Err(backoff::Error::Permanent(AppError::ConfigError(
-                format!("Erro HTTP {}: {}", status, error_text)
+                format!("Erro HTTP {}: [DADOS SENSÍVEIS]", status)
             )));
         }
         Ok(response)
@@ -190,6 +172,6 @@ fn send_post_request(url: &str, user_list: &str, timeout: u64) -> Result<(), App
         }
     })?;
 
-    info!("Usuários enviados com sucesso para {}: {}", url, user_list);
+    info!("Usuários enviados com sucesso para {}", url);
     Ok(())
 }
