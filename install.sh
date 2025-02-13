@@ -140,7 +140,7 @@ mkdir -p $APP_DIR
 
 # Copiar arquivos necessários
 print_centered "INSTALANDO BINÁRIO E ARQUIVOS DE CONFIGURAÇÃO..."
-run_with_spinner "cp $BUILD_DIR/target/release/m_dulo_online_rust $APP_DIR/" "COPIANDO BINÁRIO"
+run_with_spinner "cp $BUILD_DIR/target/release/modulo-online-rust $APP_DIR/" "COPIANDO BINÁRIO"
 run_with_spinner "cp $BUILD_DIR/.env.exemple $APP_DIR/" "COPIANDO ARQUIVO .ENV"
 run_with_spinner "cp $BUILD_DIR/$SERVICE_FILE_NAME $APP_DIR/" "COPIANDO ARQUIVO DE SERVIÇO"
 
