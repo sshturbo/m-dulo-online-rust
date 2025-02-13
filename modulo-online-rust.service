@@ -17,7 +17,7 @@ StandardError=file:/opt/modulo-online-rust/modulo-online-rust.err.log
 
 # Limites de recursos (opcional)
 MemoryMax=512M
-CPUQuota=50%
+CPUQuota=30%
 
 [Install]
 WantedBy=multi-user.target
