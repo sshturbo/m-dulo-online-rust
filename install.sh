@@ -10,16 +10,19 @@ BUILD_DIR="/tmp/modulo-online-rust-build"
 SERVICE_FILE_NAME="modulo-online-rust.service"
 
 # ===============================
-# Solicitação de Informações do Usuário
-# ===============================
-read -p "Digite o domínio da API (ex: api.exemplo.com): " API_DOMAIN
-API_URL="https://${API_DOMAIN}/online.php"
-
-# ===============================
 # Funções Utilitárias
 # ===============================
 print_centered() {
-    printf "\e[33m%s\e[0m\n" "$1"
+    printf "\e[1;33m%s\e[0m\n" "$1"
+}
+
+print_big_message() {
+    echo -e "\e[1;32m"
+    echo "========================================"
+    echo "       BEM-VINDO AO INSTALADOR"
+    echo "        DO MÓDULO ONLINE RUST"
+    echo "========================================"
+    echo -e "\e[0m"
 }
 
 progress_bar() {
@@ -34,7 +37,7 @@ progress_bar() {
 run_with_spinner() {
     local command="$1"
     local message="$2"
-    echo -n "$message"
+    echo -ne "\e[1;34m$message...\e[0m"
     $command &>/tmp/command_output.log &
     local pid=$!
     while kill -0 $pid 2>/dev/null; do
@@ -43,11 +46,11 @@ run_with_spinner() {
     done
     wait $pid
     if [ $? -ne 0 ]; then
-        echo " ERRO!"
+        echo -e "\e[1;31m ERRO!\e[0m"
         cat /tmp/command_output.log
         exit 1
     else
-        echo " FEITO!"
+        echo -e "\e[1;32m FEITO!\e[0m"
     fi
 }
 
@@ -61,10 +64,21 @@ install_if_missing() {
 }
 
 # ===============================
+# Exibir Mensagem Inicial
+# ===============================
+clear
+print_big_message
+echo -e "\e[1;36mAntes de iniciar a instalação, precisamos de algumas informações.\e[0m"
+echo -e "\e[1;33mPor favor, informe o domínio onde a API será acessada.\e[0m"
+echo ""
+read -p "Digite o domínio da API (exemplo: api.seusite.com): " API_DOMAIN
+API_URL="https://${API_DOMAIN}/online.php"
+
+# ===============================
 # Validações Iniciais
 # ===============================
 if [[ $EUID -ne 0 ]]; then
-    echo "Este script deve ser executado como root."
+    echo -e "\e[1;31mEste script deve ser executado como root.\e[0m"
     exit 1
 fi
 
@@ -88,7 +102,7 @@ print_centered "INSTALANDO RUST..."
 if ! command -v rustc &>/dev/null; then
     curl -o /tmp/rustup-init.sh https://sh.rustup.rs
     if [ $? -ne 0 ]; then
-        echo "Erro ao baixar o instalador do Rust"
+        echo -e "\e[1;31mErro ao baixar o instalador do Rust\e[0m"
         exit 1
     fi
 
@@ -158,4 +172,5 @@ else
 fi
 
 progress_bar 10
-print_centered "MÓDULO INSTALADO E CONFIGURADO COM SUCESSO!"
+print_big_message
+echo -e "\e[1;32mMÓDULO INSTALADO E CONFIGURADO COM SUCESSO!\e[0m"
