@@ -36,7 +36,7 @@ impl Config {
             .map_err(|_| AppError::ConfigError("API_URL não especificada no .env".to_string()))?;
             
         let interval = env::var("CHECK_INTERVAL")
-            .unwrap_or_else(|_| "10".to_string()) // Aumentar o intervalo para reduzir a carga
+            .unwrap_or_else(|_| "10".to_string())
             .parse()
             .map_err(|_| AppError::ConfigError("CHECK_INTERVAL inválido".to_string()))?;
             
@@ -58,7 +58,7 @@ fn main() {
     
     match Config::from_env() {
         Ok(config) => {
-            info!("Iniciando monitoramento com URL: {}", config.url);
+            info!("Iniciando monitoramento com URL configurada");
             start_loop(&config);
         }
         Err(e) => {
@@ -136,10 +136,10 @@ fn send_post_request(url: &str, user_list: &str, timeout: u64) -> Result<(), App
         .build()?;
     
     let form_data = format!("users={}", urlencoding::encode(user_list));
-    debug!("Tentando enviar dados para {}: [DADOS SENSÍVEIS]", url);
+    debug!("Preparando para enviar dados para a URL configurada");
     
     backoff::retry(backoff, || {
-        info!("Fazendo requisição POST para {}", url);
+        info!("Fazendo requisição POST");
         let response = client.post(url)
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(form_data.clone())
@@ -154,7 +154,7 @@ fn send_post_request(url: &str, user_list: &str, timeout: u64) -> Result<(), App
         
         if !status.is_success() {
             let error_text = response.text().unwrap_or_default();
-            error!("Erro na resposta: Status={}, Body=[DADOS SENSÍVEIS]", status);
+            error!("Erro na resposta: Status={}", status);
             return Err(backoff::Error::Permanent(AppError::ConfigError(
                 format!("Erro HTTP {}: [DADOS SENSÍVEIS]", status)
             )));
@@ -172,6 +172,6 @@ fn send_post_request(url: &str, user_list: &str, timeout: u64) -> Result<(), App
         }
     })?;
 
-    info!("Usuários enviados com sucesso para {}", url);
+    info!("Usuários enviados com sucesso");
     Ok(())
 }
