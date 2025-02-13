@@ -83,8 +83,24 @@ done
 # ===============================
 print_centered "INSTALANDO RUST..."
 if ! command -v rustc &>/dev/null; then
-    run_with_spinner "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y" "INSTALANDO RUST"
-    source $HOME/.cargo/env
+    # Download the rustup installer to a temporary file
+    curl -o /tmp/rustup-init.sh https://sh.rustup.rs
+    if [ $? -ne 0 ]; then
+        echo "Erro ao baixar o instalador do Rust"
+        exit 1
+    fi
+    
+    # Make it executable
+    chmod +x /tmp/rustup-init.sh
+    
+    # Run the installer with default settings
+    run_with_spinner "/tmp/rustup-init.sh -y" "INSTALANDO RUST"
+    
+    # Clean up
+    rm /tmp/rustup-init.sh
+    
+    # Reload shell environment
+    source "$HOME/.cargo/env"
 else
     print_centered "RUST JÁ ESTÁ INSTALADO."
 fi
