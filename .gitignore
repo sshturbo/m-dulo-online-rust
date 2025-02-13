@@ -1,3 +1,7 @@
 /target
+
 modulo-online-rust
 .env
+Cargo.lock
+*.log
+*.toml
