@@ -69,7 +69,7 @@ fn start_loop(config: &Config) {
     loop {
         match get_users() {
             Ok(user_list) => {
-                if let Err(e) = send_post_request(&config.url, &user_list) {
+                if let Err(e) = send_post_request(config.url.clone(), user_list) {
                     error!("Erro ao enviar POST request: {}", e);
                 }
             }
@@ -126,18 +126,18 @@ fn get_openvpn_users() -> Result<Vec<String>, AppError> {
     Ok(users)
 }
 
-fn send_post_request(url: &str, user_list: &str) -> Result<(), AppError> {
+fn send_post_request(url: String, user_list: String) -> Result<(), AppError> {
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(5)) // Timeout menor para não esperar muito
         .build()
         .map_err(AppError::RequestError)?;
     
-    let form_data = format!("users={}", urlencoding::encode(user_list));
+    let form_data = format!("users={}", urlencoding::encode(&user_list));
     debug!("Enviando dados para a URL configurada");
     
     // Enviar requisição assíncrona e ignorar a resposta
     std::thread::spawn(move || {
-        let _ = client.post(url)
+        let _ = client.post(&url)
             .header("Content-Type", "application/x-www-form-urlencoded")
             .body(form_data)
             .send();
