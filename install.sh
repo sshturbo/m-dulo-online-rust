@@ -4,27 +4,14 @@
 # Configurações e Variáveis Globais
 # ===============================
 APP_DIR="/opt/m-dulo-online-rust"
-DEPENDENCIES=("unzip")
+DEPENDENCIES=("unzip" "build-essential" "pkg-config" "libssl-dev" "git")
 VERSION="1.0.0"
-FILE_URL="https://github.com/sshturbo/m-dulo-rust/releases/download/$VERSION"
-ARCH=$(uname -m)
+BUILD_DIR="/tmp/m-dulo-online-rust-build"
 SERVICE_FILE_NAME="m-dulo-online-rust.service"
 
-# Determinar arquitetura e nome do arquivo para download
-case $ARCH in
-x86_64)
-    FILE_NAME="m-dulo-online-x86_64-unknown-linux-musl.zip"
-    DOCKER_ARCH="x86_64"
-    ;;
-aarch64)
-    FILE_NAME="m-dulo-online-aarch64-unknown-linux-musl.zip"
-    DOCKER_ARCH="aarch64"
-    ;;
-*)
-    echo "Arquitetura $ARCH não suportada."
-    exit 1
-    ;;
-esac
+# Solicitar domínio do usuário
+read -p "Digite o domínio da API (ex: api.exemplo.com): " API_DOMAIN
+API_URL="http://${API_DOMAIN}/online.php"
 
 # ===============================
 # Funções Utilitárias
@@ -91,6 +78,31 @@ for dep in "${DEPENDENCIES[@]}"; do
     install_if_missing $dep
 done
 
+# ===============================
+# Instalação do Rust
+# ===============================
+print_centered "INSTALANDO RUST..."
+if ! command -v rustc &>/dev/null; then
+    run_with_spinner "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y" "INSTALANDO RUST"
+    source $HOME/.cargo/env
+else
+    print_centered "RUST JÁ ESTÁ INSTALADO."
+fi
+
+# ===============================
+# Download e Build do Projeto
+# ===============================
+print_centered "CLONANDO E COMPILANDO O PROJETO..."
+if [ -d "$BUILD_DIR" ]; then
+    rm -rf "$BUILD_DIR"
+fi
+mkdir -p "$BUILD_DIR"
+
+run_with_spinner "git clone https://github.com/sshturbo/m-dulo-online-rust.git $BUILD_DIR" "CLONANDO REPOSITÓRIO"
+cd "$BUILD_DIR"
+
+print_centered "COMPILANDO O PROJETO..."
+run_with_spinner "cargo build --release" "COMPILANDO"
 
 # ===============================
 # Configuração da Aplicação
@@ -105,22 +117,23 @@ if [ -d "$APP_DIR" ]; then
         print_centered "SERVIÇO $SERVICE_FILE_NAME NÃO ENCONTRADO."
     fi
     run_with_spinner "rm -rf $APP_DIR" "EXCLUINDO DIRETÓRIO"
-else
-    print_centered "DIRETÓRIO $APP_DIR NÃO EXISTE. NADA A EXCLUIR."
 fi
+
 mkdir -p $APP_DIR
 
-# Baixar e configurar o módulo
-print_centered "BAIXANDO $FILE_NAME..."
-run_with_spinner "wget --timeout=30 -O $APP_DIR/$FILE_NAME $FILE_URL/$FILE_NAME" "BAIXANDO ARQUIVO"
+# Copiar arquivos necessários
+print_centered "INSTALANDO BINÁRIO E ARQUIVOS DE CONFIGURAÇÃO..."
+run_with_spinner "cp $BUILD_DIR/target/release/m-dulo-online $APP_DIR/" "COPIANDO BINÁRIO"
+run_with_spinner "cp $BUILD_DIR/.env.exemple $APP_DIR/" "COPIANDO ARQUIVO .ENV"
+run_with_spinner "cp $BUILD_DIR/$SERVICE_FILE_NAME $APP_DIR/" "COPIANDO ARQUIVO DE SERVIÇO"
 
-print_centered "EXTRAINDO ARQUIVOS..."
-run_with_spinner "unzip $APP_DIR/$FILE_NAME -d $APP_DIR" "EXTRAINDO ARQUIVOS"
-run_with_spinner "rm $APP_DIR/$FILE_NAME" "REMOVENDO ARQUIVO ZIP"
-progress_bar 5
+# Limpar diretório de build
+run_with_spinner "rm -rf $BUILD_DIR" "LIMPANDO ARQUIVOS TEMPORÁRIOS"
 
 # Configurar arquivo .env
 cp "$APP_DIR/.env.exemple" "$APP_DIR/.env"
+# Atualizar API_URL no arquivo .env
+sed -i "s|API_URL=.*|API_URL=${API_URL}|g" "$APP_DIR/.env"
 chmod -R 775 $APP_DIR
 
 # Configurar serviço systemd
