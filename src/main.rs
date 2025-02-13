@@ -13,6 +13,8 @@ use thiserror::Error;
 enum AppError {
     #[error("Erro ao executar comando: {0}")]
     CommandError(#[from] std::io::Error),
+    #[error("Erro na requisição HTTP: {0}")]
+    RequestError(#[from] reqwest::Error),
     #[error("Erro de configuração: {0}")]
     ConfigError(String),
 }
@@ -127,7 +129,8 @@ fn get_openvpn_users() -> Result<Vec<String>, AppError> {
 fn send_post_request(url: &str, user_list: &str) -> Result<(), AppError> {
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(5)) // Timeout menor para não esperar muito
-        .build()?;
+        .build()
+        .map_err(AppError::RequestError)?;
     
     let form_data = format!("users={}", urlencoding::encode(user_list));
     debug!("Enviando dados para a URL configurada");
