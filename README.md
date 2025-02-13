@@ -23,7 +23,9 @@ REQUEST_TIMEOUT=5 # Timeout das requisições em segundos
 
 ## Instalação rapida
 
+```bash
 sudo wget -qO- https://raw.githubusercontent.com/sshturbo/m-dulo-online-rust/refs/heads/master/install.sh | sudo bash
+```
 
 ## Instalação
 
