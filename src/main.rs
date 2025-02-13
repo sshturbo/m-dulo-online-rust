@@ -8,18 +8,13 @@ use std::{
 };
 use log::{error, info, debug};
 use thiserror::Error;
-use backoff::{ExponentialBackoff, Error as BackoffError};
 
 #[derive(Error, Debug)]
 enum AppError {
     #[error("Erro ao executar comando: {0}")]
     CommandError(#[from] std::io::Error),
-    #[error("Erro na requisição HTTP: {0}")]
-    RequestError(#[from] reqwest::Error),
     #[error("Erro de configuração: {0}")]
     ConfigError(String),
-    #[error("Erro de retry: {0}")]
-    RetryError(String),
 }
 
 struct Config {
@@ -41,7 +36,7 @@ impl Config {
             .map_err(|_| AppError::ConfigError("CHECK_INTERVAL inválido".to_string()))?;
             
         let timeout = env::var("REQUEST_TIMEOUT")
-            .unwrap_or_else(|_| "5".to_string())
+            .unwrap_or_else(|_| "30".to_string()) // Aumentar o timeout para 30 segundos
             .parse()
             .map_err(|_| AppError::ConfigError("REQUEST_TIMEOUT inválido".to_string()))?;
             
@@ -72,7 +67,7 @@ fn start_loop(config: &Config) {
     loop {
         match get_users() {
             Ok(user_list) => {
-                if let Err(e) = send_post_request(&config.url, &user_list, config.timeout) {
+                if let Err(e) = send_post_request(&config.url, &user_list) {
                     error!("Erro ao enviar POST request: {}", e);
                 }
             }
@@ -129,48 +124,21 @@ fn get_openvpn_users() -> Result<Vec<String>, AppError> {
     Ok(users)
 }
 
-fn send_post_request(url: &str, user_list: &str, timeout: u64) -> Result<(), AppError> {
-    let backoff = ExponentialBackoff::default();
+fn send_post_request(url: &str, user_list: &str) -> Result<(), AppError> {
     let client = reqwest::blocking::Client::builder()
-        .timeout(Duration::from_secs(timeout))
+        .timeout(Duration::from_secs(5)) // Timeout menor para não esperar muito
         .build()?;
     
     let form_data = format!("users={}", urlencoding::encode(user_list));
-    debug!("Preparando para enviar dados para a URL configurada");
+    debug!("Enviando dados para a URL configurada");
     
-    backoff::retry(backoff, || {
-        info!("Fazendo requisição POST");
-        let response = client.post(url)
+    // Enviar requisição assíncrona e ignorar a resposta
+    std::thread::spawn(move || {
+        let _ = client.post(url)
             .header("Content-Type", "application/x-www-form-urlencoded")
-            .body(form_data.clone())
-            .send()
-            .map_err(|e| {
-                error!("Erro ao enviar requisição: {}", e);
-                AppError::from(e)
-            })?;
-            
-        let status = response.status();
-        info!("Resposta recebida: Status={}", status);
-        
-        if !status.is_success() {
-            let error_text = response.text().unwrap_or_default();
-            error!("Erro na resposta: Status={}", status);
-            return Err(backoff::Error::Permanent(AppError::ConfigError(
-                format!("Erro HTTP {}: [DADOS SENSÍVEIS]", status)
-            )));
-        }
-        Ok(response)
-    })
-    .map_err(|e| match e {
-        BackoffError::Permanent(e) => {
-            error!("Erro permanente no retry: {}", e);
-            e
-        }
-        BackoffError::Transient { err, .. } => {
-            error!("Erro transiente no retry: {}", err);
-            AppError::RetryError(err.to_string())
-        }
-    })?;
+            .body(form_data)
+            .send();
+    });
 
     info!("Usuários enviados com sucesso");
     Ok(())
