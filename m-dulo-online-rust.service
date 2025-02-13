@@ -1,0 +1,23 @@
+[Unit]
+Description=Módulos do online para o Painel Web Pro
+After=network.target
+StartLimitInterval=30
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/opt/m-dulo-online-rust/modulo-online-rust
+WorkingDirectory=/opt/m-dulo-online-rust
+Restart=always
+RestartSec=5
+StandardOutput=file:/opt/m-dulo-online-rust/modulo-online-rust.out.log
+StandardError=file:/opt/m-dulo-online-rust/modulo-online-rust.err.log
+
+# Limites de recursos (opcional)
+MemoryMax=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target
