@@ -21,6 +21,10 @@ CHECK_INTERVAL=3 # Intervalo entre verificações em segundos
 REQUEST_TIMEOUT=5 # Timeout das requisições em segundos
 ```
 
+## Instalação rapida
+
+sudo wget -qO- https://raw.githubusercontent.com/sshturbo/m-dulo-online-rust/refs/heads/master/install.sh | sudo bash
+
 ## Instalação
 
 Requisitos:
