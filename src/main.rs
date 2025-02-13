@@ -3,7 +3,8 @@ use std::{
     process::Command,
     thread,
     time::Duration,
-    fs,
+    fs::{self, File},
+    io::{self, BufRead},
 };
 use log::{error, info};
 use thiserror::Error;
@@ -124,20 +125,26 @@ fn extract_user_from_columns(columns: &[&str]) -> Option<String> {
 }
 
 fn get_openvpn_users() -> Result<Vec<String>, AppError> {
-    if !fs::metadata("/etc/openvpn/openvpn-status.log").is_ok() {
+    let path = "/etc/openvpn/openvpn-status.log";
+    if !fs::metadata(path).is_ok() {
         return Ok(Vec::new());
     }
 
-    let output = Command::new("sh")
-        .arg("-c")
-        .arg("cat /etc/openvpn/openvpn-status.log | grep -Eo '^[a-zA-Z0-9_-]+,[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+' | awk -F, '{print $1}'")
-        .output()?;
+    let file = File::open(path)?;
+    let reader = io::BufReader::new(file);
+    let users: Vec<String> = reader.lines()
+        .filter_map(|line| line.ok())
+        .filter_map(|line| {
+            let parts: Vec<&str> = line.split(',').collect();
+            if parts.len() > 1 && parts[1].contains('.') {
+                Some(parts[0].to_string())
+            } else {
+                None
+            }
+        })
+        .collect();
 
-    Ok(String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .filter(|user| !user.is_empty())
-        .map(String::from)
-        .collect())
+    Ok(users)
 }
 
 fn send_post_request(url: &str, user_list: &str, timeout: u64) -> Result<(), AppError> {
