@@ -1,9 +1,8 @@
-use std::{env, fs::File, io::{self, BufRead}};
+use std::{env, time::Duration};
 use log::{error, info, debug};
 use thiserror::Error;
-use tokio::{time::sleep, process::Command};
+use tokio::{time::sleep, process::Command, fs::File, io::{self, AsyncBufReadExt, BufReader}};
 use reqwest::Client;
-use std::time::Duration;
 
 #[derive(Error, Debug)]
 enum AppError {
@@ -105,16 +104,18 @@ async fn get_users() -> Result<String, AppError> {
 
 async fn get_openvpn_users() -> Result<Vec<String>, AppError> {
     let path = "/etc/openvpn/openvpn-status.log";
-    if !tokio::fs::metadata(path).await.is_ok() {
+
+    // Verifica se o arquivo existe
+    if tokio::fs::metadata(path).await.is_err() {
         return Ok(Vec::new());
     }
 
-    let file = tokio::fs::File::open(path).await?;
-    let reader = io::BufReader::new(file);
+    let file = File::open(path).await?;
+    let reader = BufReader::new(file);
+    let mut lines = reader.lines();
     let mut users = Vec::new();
 
-    let mut lines = reader.lines();
-    while let Some(line) = lines.next().transpose()? {
+    while let Some(line) = lines.next_line().await? {
         let parts: Vec<&str> = line.split(',').collect();
         if parts.len() > 1 && parts[1].contains('.') {
             users.push(parts[0].to_string());
