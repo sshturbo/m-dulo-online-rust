@@ -76,6 +76,7 @@ run_with_spinner "apt-get upgrade -y" "ATUALIZANDO O SISTEMA"
 # Instalar dependências
 for dep in "${DEPENDENCIES[@]}"; do
     install_if_missing $dep
+    wait $!
 done
 
 # ===============================
@@ -89,16 +90,16 @@ if ! command -v rustc &>/dev/null; then
         echo "Erro ao baixar o instalador do Rust"
         exit 1
     fi
-    
+
     # Make it executable
     chmod +x /tmp/rustup-init.sh
-    
+
     # Run the installer with default settings
     run_with_spinner "/tmp/rustup-init.sh -y" "INSTALANDO RUST"
-    
+
     # Clean up
     rm /tmp/rustup-init.sh
-    
+
     # Reload shell environment
     source "$HOME/.cargo/env"
 else
